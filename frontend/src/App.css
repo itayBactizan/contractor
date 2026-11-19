@@ -1,0 +1,414 @@
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+}
+
+.subtitle {
+  margin: 0 0 24px;
+  color: var(--muted);
+}
+
+/* --- Input form --- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.form label {
+  font-weight: 600;
+}
+
+.form textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.button {
+  display: inline-block;
+  padding: 8px 18px;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.button:hover {
+  background: var(--accent-hover);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* --- Status --- */
+.status {
+  margin: 20px 0 0;
+  color: var(--muted);
+}
+
+.banner {
+  margin: 20px 0 0;
+  padding: 12px 16px;
+  color: var(--error);
+  background: var(--error-bg);
+  border-radius: 6px;
+}
+
+/* --- Results --- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--border);
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.card-id {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.failed {
+  margin-top: 24px;
+}
+
+.failed h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  color: var(--error);
+}
+
+.failed ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.failed li {
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+/* --- Contracts / plots boxes --- */
+.boxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--border);
+  border-radius: 8px;
+}
+
+.box-contract {
+  border-top-color: var(--contract);
+}
+
+.box-plot {
+  border-top-color: var(--plot);
+}
+
+.box h2 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.box label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.box input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.input-row input {
+  flex: 1;
+}
+
+.input-row .button {
+  flex-shrink: 0;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+}
+
+/* --- Chips --- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips-empty {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1.5px solid;
+  border-radius: 999px;
+  overflow-wrap: anywhere;
+}
+
+.chip-contract {
+  color: var(--contract);
+  border-color: var(--contract);
+}
+
+.chip-plot {
+  color: var(--plot);
+  border-color: var(--plot);
+}
+
+.chip button {
+  padding: 0 6px;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  color: inherit;
+  background: none;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip button:hover {
+  background: var(--border);
+}
+
+/* --- Create row + legend --- */
+.create-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.button-large {
+  padding: 10px 24px;
+  font-size: 1.05rem;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.swatch {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  border-top: 3px solid;
+  margin-left: 8px;
+}
+
+.swatch-contract {
+  border-color: var(--contract);
+}
+
+.swatch-plot {
+  border-color: var(--plot);
+}
+
+/* --- Result card details --- */
+.card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card-detail {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.detail-contract {
+  color: var(--contract);
+}
+
+.detail-plot {
+  color: var(--plot);
+}
+
+/* --- Tabs --- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 8px 16px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* --- By category --- */
+.category-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.box select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.field-name {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.category-section .form-actions {
+  margin-top: 8px;
+}
+
+.category-section .status {
+  margin-top: 12px;
+}
+
+.grid-compact {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.grid-compact .card-footer {
+  flex-wrap: wrap;
+}
+
+details.failed summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+/* --- Dataset tab --- */
+.dataset-size {
+  margin: -12px 0 16px;
+  color: var(--muted);
+}
+
+.subtitle code {
+  font-size: 0.875em;
+  padding: 1px 4px;
+  background: var(--border);
+  border-radius: 4px;
+}

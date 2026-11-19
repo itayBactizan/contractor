@@ -1,0 +1,11 @@
+[project]
+name = "itay-test"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.163.1",
+    "pillow>=13.0.0",
+    "requests>=2.34.2",
+    "truststore>=0.10.5",
+    "uvicorn[standard]>=0.54.0",
+]
