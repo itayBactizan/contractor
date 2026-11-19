@@ -206,11 +206,11 @@ py = (ymax - y) / (ymax - ymin) * height      # y flipped: map y grows up, image
 
 ### `dataset_export.py`: YOLO dataset images
 
-- One contract per image, **1024×1024** (`orthophoto.OUTPUT_SIZE`), everything outside the contract polygon **black**, no outline or label.
-- `contract_bbox(feature)`: tight square around the contract with a 3% margin (`MARGIN_RATIO`), so the contract fills the frame.
-- `mask_outside(image, geometry, bbox)`: builds a Pillow mask from the polygon rings (same map→pixel formula as `draw_outline`); exterior rings (clockwise in ArcGIS) are white, holes (counter-clockwise) black; pixels outside the mask become black.
-- `make_dataset_image(feature, label)`: export → mask → save `dataset/images/<contractId>_<OBJECTID>.png`, `dataset/meta/<name>.json` (bbox in EPSG:2039, metres per pixel, polygon, attributes) and a row in `dataset/metadata.csv`. The bbox + metres per pixel are what you need later to turn map coordinates into YOLO boxes: `px = (x - xmin) / meters_per_pixel`, `py = (ymax - y) / meters_per_pixel`.
-- `sample_dataset_images(value, count)`: random contracts with `MataraDesc == value`, skipping OBJECTIDs already in `metadata.csv` (no duplicates). Uses `category_sample.sample_items`, the shared random-sampling loop.
+- **Fixed real scale:** every image is 1024×1024 at the orthophoto's native **0.2 m/pixel**, so one image covers `TILE_METERS` = 204.8 m. All images share the same scale.
+- `contract_tiles(feature)`: a grid of 204.8 m squares centered on the contract. A contract up to 204.8 m gets **one** tile (shown at true size, black around it); a larger one gets several. More than `MAX_TILES_PER_CONTRACT` (25) → skipped as too large.
+- `polygon_mask(geometry, bbox, size)`: Pillow mask from the polygon rings (same map→pixel formula as `draw_outline`); exterior rings (clockwise in ArcGIS) white, holes (counter-clockwise) black. It's computed **before** downloading, so tiles with less than `MIN_TILE_FILL` (1%) of the contract are skipped without a request.
+- `make_dataset_images(feature, label)`: per kept tile: coverage check → export → `apply_mask` (outside = black) → save `dataset/images/<contractId>_<OBJECTID>[_r<row>c<col>].png`, `dataset/meta/<name>.json` and a `metadata.csv` row (`tile_row`, `tile_col`, `tiles_total`, `contract_fill`, bbox, `meters_per_pixel` = 0.2). With the bbox you can turn any map coordinate into a pixel later: `px = (x - xmin) / 0.2`, `py = (ymax - y) / 0.2`.
+- `sample_dataset_images(value, count)`: `count` random contracts with `MataraDesc == value`, skipping OBJECTIDs already in `metadata.csv`; returns `contracts_added` (one contract can give several images). Uses `category_sample.sample_items`, whose `render` may return one path or a list.
 - CLI: `uv run scripts/dataset_export.py "מגורים" --count 5`.
 
 ### `explore_field.py`: field values (CLI)

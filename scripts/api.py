@@ -185,5 +185,6 @@ def dataset_sample(request: DatasetSampleRequest) -> dict:
         "total_matches": result["total_matches"],
         "images": images,
         "failed": result["failed"],
+        "contracts_added": result["contracts_added"],
         "dataset_size": result["dataset_size"],
     }

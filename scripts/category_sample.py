@@ -93,12 +93,12 @@ def sample_items(
     field: str,
     value,
     count: int,
-    render: Callable[[dict, str, int], Path],
+    render: Callable[[dict, str, int], Path | list[Path]],
     exclude_ids: Iterable[int] = (),
 ) -> dict:
     """Pick `count` random items with field == value and render one image per item.
 
-    render(feature, label, index) -> image path. Items that fail (no geometry,
+    render(feature, label, index) -> image path or list of paths. Items that fail (no geometry,
     no orthophoto coverage, ...) are replaced by other random items, up to
     3 × count attempts. OBJECTIDs in exclude_ids are never picked.
     Returns {"total_matches", "images": [{"image_path", "label", "attributes"}], "failed"}.
@@ -114,9 +114,10 @@ def sample_items(
     candidates = candidates[: 3 * count]
 
     images, failed = [], []
+    items_done = 0  # count is the number of items, even if one item gives several images
     position = 0
-    while len(images) < count and position < len(candidates):
-        batch = candidates[position: position + (count - len(images))]
+    while items_done < count and position < len(candidates):
+        batch = candidates[position: position + (count - items_done)]
         position += len(batch)
         for feature in query_by_object_ids(layer_url, batch, out_sr=SPATIAL_REF):
             label = item_label(layer, feature)
@@ -124,15 +125,19 @@ def sample_items(
                 failed.append({"id": label, "error": "No geometry"})
                 continue
             try:
-                image_path = render(feature, label, len(images) + 1)
+                rendered = render(feature, label, len(images) + 1)
             except (requests.RequestException, RuntimeError, ValueError) as e:
                 failed.append({"id": label, "error": _error_text(e)})
                 continue
-            images.append({
-                "image_path": image_path,
-                "label": label,
-                "attributes": feature.get("attributes", {}),
-            })
+            # render may return one image or several (e.g. tiles of a large contract)
+            paths = rendered if isinstance(rendered, list) else [rendered]
+            for n, image_path in enumerate(paths, start=1):
+                images.append({
+                    "image_path": image_path,
+                    "label": label if len(paths) == 1 else f"{label} ({n}/{len(paths)})",
+                    "attributes": feature.get("attributes", {}),
+                })
+            items_done += 1
 
     return {"total_matches": len(ids), "images": images, "failed": failed}
 

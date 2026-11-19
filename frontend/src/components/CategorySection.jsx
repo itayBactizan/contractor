@@ -140,7 +140,9 @@ export default function CategorySection({
 
       {results && (
         <p className="status">
-          Showing {results.images.length} random of {results.total_matches} matching.
+          {results.contracts_added !== undefined
+            ? `Added ${results.contracts_added} contracts (${results.images.length} images) of ${results.total_matches} matching.`
+            : `Showing ${results.images.length} random of ${results.total_matches} matching.`}
         </p>
       )}
 
