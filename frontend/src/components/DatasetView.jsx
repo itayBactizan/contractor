@@ -8,10 +8,10 @@ export default function DatasetView() {
   return (
     <>
       <p className="subtitle">
-        Build a YOLO image dataset: 1024×1024 images at the orthophoto&apos;s full resolution (0.2 m per pixel, so
-        one image covers 205 m). Everything outside the contract is black and no lines or numbers are drawn.
-        Small contracts appear at their true size; large contracts are split into several images. Images are
-        saved to <code>dataset/images</code> with
+        Build a YOLO image dataset: 1024×1024 images, everything outside the contract black, no lines or numbers.
+        Small contracts are enlarged to fill the image (at most 4×, with high-quality resampling); contracts
+        larger than 205 m are split into several full-detail images. Images are saved to{' '}
+        <code>dataset/images</code> with
         their metadata in <code>dataset/meta</code> and <code>dataset/metadata.csv</code>. Contracts already in
         the dataset are never picked again.
       </p>

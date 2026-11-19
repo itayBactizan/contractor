@@ -56,17 +56,18 @@ def export_image(
     output_path: str | Path,
     image_format: str = "tiff",
     url: str = IMAGE_SERVER_URL,
+    size_px: int | None = None,
 ) -> Path:
     """
     Download the orthophoto for the bbox and save it to output_path.
 
     image_format: "tiff" (GeoTIFF, georeferenced, for GIS), "jpg" or "png".
-    The longer side is OUTPUT_SIZE pixels (1024×1024 for the square areas the app uses).
+    The longer side is size_px pixels (default OUTPUT_SIZE: 1024×1024 for the square areas the app uses).
     """
     xmin, ymin, xmax, ymax = bbox
-    # Keep the area's proportions: the longer side gets OUTPUT_SIZE pixels
+    # Keep the area's proportions: the longer side gets size_px pixels
     w, h = xmax - xmin, ymax - ymin
-    scale = OUTPUT_SIZE / max(w, h)
+    scale = (size_px or OUTPUT_SIZE) / max(w, h)
     width, height = max(1, round(w * scale)), max(1, round(h * scale))
 
     params = {

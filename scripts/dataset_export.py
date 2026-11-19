@@ -3,10 +3,13 @@ Dataset images for YOLO: contracts at a fixed real scale (the orthophoto's
 native 0.2 m/pixel), 1024×1024 per image, everything outside the contract
 polygon black, no outlines or labels drawn.
 
-- A contract up to 204.8 m (1024 px × 0.2 m) gets one image centered on it,
-  at its true size, with black around it.
-- A larger contract is split into a grid of 1024×1024 tiles; tiles that hold
-  (almost) none of the contract are skipped.
+- A small contract is enlarged to fill ~90% of the image, but never more than
+  MAX_ZOOM× (4× = 0.05 m/pixel): the area is downloaded at full detail and
+  enlarged locally with high-quality (Lanczos) resampling. Very small
+  contracts keep some black border.
+- A contract larger than 204.8 m (1024 px × 0.2 m) is split into a grid of
+  full-detail 1024×1024 tiles; tiles that hold (almost) none of the contract
+  are skipped.
 
 Each image gets a metadata JSON (bbox in EPSG:2039, metres per pixel, the
 contract polygon, attributes) so boxes/labels can be computed later.
@@ -43,6 +46,10 @@ METADATA_CSV = DATASET_DIR / "metadata.csv"
 FIELD = "MataraDesc"
 # One image covers this many metres at the native resolution: 1024 × 0.2 = 204.8 m
 TILE_METERS = OUTPUT_SIZE * PIXEL_SIZE
+# Small contracts: border around the contract (share of its size on each side) -> fills ~90%
+MARGIN_RATIO = 0.05
+# Small contracts are enlarged at most this much (4× = 0.05 m/pixel)
+MAX_ZOOM = 4
 # Skip tiles where less than this share of the pixels is inside the contract
 MIN_TILE_FILL = 0.01
 # Contracts needing more tiles than this (~1 km across) are skipped
@@ -50,19 +57,31 @@ MAX_TILES_PER_CONTRACT = 25
 
 CSV_COLUMNS = [
     "file", "contract_id", "objectid", FIELD,
-    "tile_row", "tile_col", "tiles_total", "contract_fill",
+    "tile_row", "tile_col", "tiles_total", "contract_fill", "zoom",
     "xmin", "ymin", "xmax", "ymax", "epsg", "size_px", "meters_per_pixel",
 ]
 
 SAFE_NAME = re.compile(r"[^A-Za-z0-9_-]")
 
 
-def contract_tiles(feature: dict) -> list[tuple[int, int, BBox]]:
-    """Grid of TILE_METERS squares covering the contract, centered on it.
+def contract_tiles(feature: dict) -> list[tuple[int, int, BBox, int]]:
+    """Square image area(s) for the contract: [(row, col, bbox, download_px)].
 
-    Returns [(row, col, bbox)], row 0 = north (top), col 0 = west (left).
+    Small contract: one square, the contract filling ~90% of it (at most
+    MAX_ZOOM× enlarged), downloaded at full detail (download_px < 1024) and
+    enlarged afterwards. Large contract: a grid of TILE_METERS squares centered
+    on it, each downloaded at 1024 px. Row 0 = north (top), col 0 = west (left).
     """
     xmin, ymin, xmax, ymax = features_bbox([feature], buffer=0)
+    extent = max(xmax - xmin, ymax - ymin)
+    cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
+
+    side = max(extent * (1 + 2 * MARGIN_RATIO), TILE_METERS / MAX_ZOOM)
+    if side < TILE_METERS:
+        half = side / 2
+        native_px = max(1, math.ceil(side / PIXEL_SIZE))
+        return [(0, 0, (cx - half, cy - half, cx + half, cy + half), native_px)]
+
     n_cols = max(1, math.ceil((xmax - xmin) / TILE_METERS))
     n_rows = max(1, math.ceil((ymax - ymin) / TILE_METERS))
     if n_cols * n_rows > MAX_TILES_PER_CONTRACT:
@@ -71,7 +90,6 @@ def contract_tiles(feature: dict) -> list[tuple[int, int, BBox]]:
         )
 
     # Center the grid on the contract
-    cx, cy = (xmin + xmax) / 2, (ymin + ymax) / 2
     grid_left = cx - n_cols * TILE_METERS / 2
     grid_top = cy + n_rows * TILE_METERS / 2
 
@@ -80,7 +98,7 @@ def contract_tiles(feature: dict) -> list[tuple[int, int, BBox]]:
         for col in range(n_cols):
             x0 = grid_left + col * TILE_METERS
             y1 = grid_top - row * TILE_METERS
-            tiles.append((row, col, (x0, y1 - TILE_METERS, x0 + TILE_METERS, y1)))
+            tiles.append((row, col, (x0, y1 - TILE_METERS, x0 + TILE_METERS, y1), OUTPUT_SIZE))
     return tiles
 
 
@@ -117,10 +135,11 @@ def mask_fill(mask: Image.Image) -> float:
 
 
 def apply_mask(image_path: Path, mask: Image.Image) -> None:
-    """Paint everything outside the mask black (in place)."""
+    """Enlarge the image to the mask size if needed (Lanczos), then paint
+    everything outside the mask black (in place)."""
     img = Image.open(image_path).convert("RGB")
     if img.size != mask.size:
-        mask = mask.resize(img.size)
+        img = img.resize(mask.size, Image.Resampling.LANCZOS)
     black = Image.new("RGB", img.size, (0, 0, 0))
     Image.composite(img, black, mask).save(image_path)
 
@@ -160,11 +179,11 @@ def make_dataset_images(feature: dict, label: str, index: int = 0) -> list[Path]
 
     # Decide which tiles to keep before downloading anything
     tiles = []
-    for row, col, bbox in contract_tiles(feature):
+    for row, col, bbox, download_px in contract_tiles(feature):
         mask = polygon_mask(geometry, bbox, size)
         fill = mask_fill(mask)
         if fill >= MIN_TILE_FILL:
-            tiles.append((row, col, bbox, mask, fill))
+            tiles.append((row, col, bbox, download_px, mask, fill))
     if not tiles:
         raise ValueError("Contract is too small to show")
 
@@ -172,11 +191,12 @@ def make_dataset_images(feature: dict, label: str, index: int = 0) -> list[Path]
     META_DIR.mkdir(parents=True, exist_ok=True)
 
     paths = []
-    for row, col, bbox, mask, fill in tiles:
+    for row, col, bbox, download_px, mask, fill in tiles:
         if not query_footprints(bbox):
             continue  # this part of the contract has no orthophoto
         name = base_name if len(tiles) == 1 else f"{base_name}_r{row}c{col}"
-        image_path = export_image(bbox, IMAGES_DIR / f"{name}.png", "png24")
+        # Download at full detail (download_px), then enlarge to 1024 and mask
+        image_path = export_image(bbox, IMAGES_DIR / f"{name}.png", "png24", size_px=download_px)
         apply_mask(image_path, mask)
 
         size_px = Image.open(image_path).size[0]
@@ -190,6 +210,7 @@ def make_dataset_images(feature: dict, label: str, index: int = 0) -> list[Path]
             "tile_col": col,
             "tiles_total": len(tiles),
             "contract_fill": round(fill, 4),
+            "zoom": round(PIXEL_SIZE / meters_per_pixel, 2),
             "epsg": SPATIAL_REF,
             "size_px": size_px,
             "meters_per_pixel": round(meters_per_pixel, 4),
